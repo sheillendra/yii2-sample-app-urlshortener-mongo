@@ -15,9 +15,15 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=5.4.0",
+        "ext-mbstring": "*",
+	"ext-gd": "*",
+        "ext-mongo": "*",
+        "fxp/composer-asset-plugin": "*",
         "yiisoft/yii2": "*",
         "yiisoft/yii2-bootstrap": "*",
-        "yiisoft/yii2-swiftmailer": "*"
+        "yiisoft/yii2-swiftmailer": "*",
+        "sheillendra/yii2-user-mongo": "*",
+        "sheillendra/yii2-seo": "*"
     },
     "require-dev": {
         "yiisoft/yii2-codeception": "*",

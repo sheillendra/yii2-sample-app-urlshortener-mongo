@@ -6,16 +6,22 @@ $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
+    'modules' => [
+        'user' => [
+            'class' => 'sheillendra\usermongo\Module',
+            'connectionName' => 'mongodb'
+        ]
+    ],
     'components' => [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
-            'cookieValidationKey' => '',
+            'cookieValidationKey' => 'yii2-url-shortener',
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
         'user' => [
-            'identityClass' => 'app\models\User',
+            'identityClass' => 'sheillendra\usermongo\models\User',
             'enableAutoLogin' => true,
         ],
         'errorHandler' => [
@@ -37,7 +43,23 @@ $config = [
                 ],
             ],
         ],
-        'db' => require(__DIR__ . '/db.php'),
+        'mongodb' => require(__DIR__ . '/db.php'),
+        'urlManager' => [
+            'enablePrettyUrl' => true,
+            'showScriptName'=>false,
+            'rules'=>[
+                '<code>'=>'site/translate'
+            ]
+        ],
+        'seoCollection' => [
+            'class' => 'sheillendra\seo\Collection',
+            'services' => [
+                'googleAnalytics' => [
+                    'class' => 'sheillendra\seo\services\GoogleAnalytics',
+                    'trackerId' => 'UA-55965930-1'
+                ]
+            ]
+        ]
     ],
     'params' => $params,
 ];

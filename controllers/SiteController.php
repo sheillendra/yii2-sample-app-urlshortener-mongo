@@ -3,36 +3,13 @@
 namespace app\controllers;
 
 use Yii;
-use yii\filters\AccessControl;
 use yii\web\Controller;
-use yii\filters\VerbFilter;
-use app\models\LoginForm;
-use app\models\ContactForm;
+use app\models\UrlForm;
+use yii\mongodb\Query;
+use yii\helpers\Url;
 
 class SiteController extends Controller
 {
-    public function behaviors()
-    {
-        return [
-            'access' => [
-                'class' => AccessControl::className(),
-                'only' => ['logout'],
-                'rules' => [
-                    [
-                        'actions' => ['logout'],
-                        'allow' => true,
-                        'roles' => ['@'],
-                    ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::className(),
-                'actions' => [
-                    'logout' => ['post'],
-                ],
-            ],
-        ];
-    }
 
     public function actions()
     {
@@ -42,55 +19,56 @@ class SiteController extends Controller
             ],
             'captcha' => [
                 'class' => 'yii\captcha\CaptchaAction',
-                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
+                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null
             ],
         ];
     }
 
     public function actionIndex()
     {
-        return $this->render('index');
-    }
-
-    public function actionLogin()
-    {
-        if (!\Yii::$app->user->isGuest) {
-            return $this->goHome();
-        }
-
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        } else {
-            return $this->render('login', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
-    }
-
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
-
+        $model = new UrlForm();
+        if ($model->load(Yii::$app->request->post()) ) {
+            $isCodeExist=true;
+            $query = new Query;
+            $query->select(['code'])->from('shortener');
+            while ($isCodeExist){
+                $isCodeExist=false;
+                $code=$this->getShortCode();
+                $query->where(['code'=>$code]);
+                if($query->one()){
+                    $isCodeExist=true;
+                }
+            }
+            
+            $collection = Yii::$app->mongodb->getCollection('shortener');
+            $collection->insert(['userId' => Yii::$app->user->identity?Yii::$app->user->identity->id:'', 'code'=>$code,'url' => $model->url]);
+            
+            Yii::$app->session->setFlash('urlFormSubmitted', Yii::$app->urlManager->createAbsoluteUrl('/').$code);
+            $submitCount=Yii::$app->session->get('_submit_count', 0);
+            $submitCount=$submitCount > 3?0:$submitCount;
+            Yii::$app->session->set('_try_login', $submitCount + 1);
             return $this->refresh();
-        } else {
-            return $this->render('contact', [
-                'model' => $model,
-            ]);
-        }
+        } 
+        return $this->render('index', [
+            'model' => $model,
+        ]);
     }
 
-    public function actionAbout()
-    {
-        return $this->render('about');
+    protected function getShortCode($length=6){
+        return substr(str_shuffle('abcdefghijklmnpqrstuvwxyzABCDEFGHIJKLMNPQRSTUVWXYZ1234567890'),rand(0,60-$length),$length);
+    }
+    
+    public function actionTranslate($code){
+        $query = new Query;
+        $query->select(['url'])->from('shortener')->where(['code'=>$code]);
+        $url=$query->one();
+        if($url){
+            $this->layout='redirect';
+            return $this->render('translate', [
+                'url' => $url,
+            ]);
+        }
+        Yii::$app->session->setFlash('urlFormSubmitted','Sorry, shorturl '.$code.' not found.');
+        $this->redirect('/');
     }
 }

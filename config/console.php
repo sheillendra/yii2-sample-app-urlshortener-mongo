@@ -10,6 +10,9 @@ return [
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log', 'gii'],
     'controllerNamespace' => 'app\commands',
+    'controllerMap' => [
+        'mongodb-migrate' => 'yii\mongodb\console\controllers\MigrateController'
+    ],
     'modules' => [
         'gii' => 'yii\gii\Module',
     ],
@@ -25,7 +28,7 @@ return [
                 ],
             ],
         ],
-        'db' => $db,
+        'mongodb' => $db,
     ],
     'params' => $params,
 ];
